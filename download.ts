@@ -72,6 +72,22 @@ async function fetchPrivateFile({
 	return decoder.blob();
 }
 
+export async function downloadZip({
+	url,
+	signal,
+}: {
+	url: string;
+	signal: AbortSignal;
+}) {
+	const response = await authenticatedFetch(url, {signal});
+
+	if (!response.ok) {
+		throw new Error(`HTTP ${response.statusText} for ${url}`);
+	}
+
+	return response.blob();
+}
+
 export async function downloadFile({
 	user,
 	repository,
@@ -87,11 +103,12 @@ export async function downloadFile({
 	file: TreeResponseObject | ContentsReponseObject;
 	signal: AbortSignal;
 }) {
+	const token = globalThis.localStorage?.getItem('token');
 	const fileRequest = {
 		user, repository, reference, file, signal,
 	};
 	const localDownload = async () =>
-		isPrivate
+		isPrivate || token
 			? fetchPrivateFile(fileRequest)
 			: fetchPublicFile(fileRequest);
 	const onFailedAttempt = (error: FailedAttemptError) => {
